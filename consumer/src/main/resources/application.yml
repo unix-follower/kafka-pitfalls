@@ -1,0 +1,55 @@
+spring:
+  application:
+    name: kafka-consumer
+  main:
+    web-application-type: none
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    client-id: ${spring.application.name}
+    consumer:
+      group-id: ${spring.application.name}-group
+      enable-auto-commit: ${SPRING_KAFKA_CONSUMER_ENABLE_AUTO_COMMIT:false}
+#       auto.commit.interval.ms Default value is 5000 ms = 5 sec
+      auto-commit-interval: ${SPRING_KAFKA_CONSUMER_AUTO_COMMIT_INTERVAL:5s}
+      max-poll-records: ${SPRING_KAFKA_CONSUMER_PROPERTIES_MAX_POLL_RECORDS:40} # Default value is 500
+      properties:
+        max.poll.interval.ms: ${SPRING_KAFKA_CONSUMER_PROPERTIES_MAX_POLL_INTERVAL_MS:30000}
+        # 30 sec. Default value is 300000 ms = 300 sec = 5 min
+    retry:
+      topic:
+        enabled: ${SPRING_KAFKA_RETRY_TOPIC_ENABLED:false}
+        attempts: ${SPRING_KAFKA_RETRY_TOPIC_ATTEMPTS:3} # Default value is 3
+        multiplier: ${SPRING_KAFKA_RETRY_TOPIC_MULTIPLIER:3} # Default value is 0
+    listener:
+#      type: SINGLE # Default value is SINGLE
+      type: ${SPRING_KAFKA_LISTENER_TYPE:BATCH}
+      ack-count: ${SPRING_KAFKA_LISTENER_ACK_COUNT:1} # Default value is 1
+      ack-time: ${SPRING_KAFKA_LISTENER_ACK_TIME:5000ms} # Default value is 5000 ms = 5 sec
+#      ack-mode: ${SPRING_KAFKA_LISTENER_ACK_MODE:MANUAL}
+#      ack-mode: MANUAL_IMMEDIATE
+      ack-mode: BATCH # Default ack mode is BATCH
+#      ack-mode: RECORD
+#      ack-mode: TIME
+#      ack-mode: COUNT
+#      ack-mode: COUNT_TIME
+
+logging:
+  level:
+    org.apache.kafka: DEBUG
+    org.springframework.kafka.listener: DEBUG
+
+app:
+  kafka:
+    topics:
+      data-bus-topic: ${APP_KAFKA_TOPICS_DATA_BUS_TOPIC:demo}
+    processing-delay: ${APP_KAFKA_PROCESSING_DELAY:1s}
+    override-default-error-handler-enabled: ${APP_KAFKA_OVERRIDE_DEFAULT_ERROR_HANDLER_ENABLED:false}
+    immediate-offset-commit-enabled: ${APP_KAFKA_IMMEDIATE_OFFSET_COMMIT_ENABLED:false}
+    async-processing-enabled: ${APP_KAFKA_ASYNC_PROCESSING_ENABLED:false}
+    async-processing-mode: ${APP_KAFKA_ASYNC_PROCESSING_MODE:ParallelStream}
+    do-not-commit-offset-enabled: ${APP_KAFKA_DO_NOT_COMMIT_OFFSET_ENABLED:false}
+    emulate-processing-error-enabled: ${APP_KAFKA_EMULATE_PROCESSING_ERROR_ENABLED:false}
+    emulate-processing-error-interval: ${APP_KAFKA_EMULATE_PROCESSING_ERROR_INTERVAL:10s}
+    error-handler-attempts: ${APP_KAFKA_ERROR_HANDLER_ATTEMPTS:0}
+    error-handler-interval: ${APP_KAFKA_ERROR_HANDLER_INTERVAL:5s}
+    log-message: ${APP_KAFKA_LOG_MESSAGE:false}

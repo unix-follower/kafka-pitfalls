@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: kafka-producer
+  main:
+    web-application-type: none
+  kafka:
+    bootstrapServers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    clientId: ${spring.application.name}
+
+app:
+  kafka:
+    topics:
+      data-bus-topic: ${APP_KAFKA_TOPICS_DATA_BUS_TOPIC:demo}
+    schedule:
+      flood-task-fixed-rate-sec: ${APP_KAFKA_SCHEDULE_FLOOD_TASK_FIXED_RATE_SEC:1}
