@@ -103,8 +103,8 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
   @ConditionalOnMissingBean({RetryableListener.class, RetryableManualAckListener.class})
   private class Listener {
     @KafkaListener(topics = DATA_BUS_TOPIC_EXPR)
-    public void consume(ConsumerRecord<String, String> record) {
-      KafkaConsumerImpl.this.consume(record, null);
+    public void consume(ConsumerRecord<String, String> consumerRecord) {
+      KafkaConsumerImpl.this.consume(consumerRecord, null);
     }
   }
 
@@ -114,8 +114,8 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
   @ConditionalOnMissingBean({RetryableListener.class, RetryableManualAckListener.class})
   private class ManualAckListener {
     @KafkaListener(topics = DATA_BUS_TOPIC_EXPR)
-    public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-      KafkaConsumerImpl.this.consume(record, ack);
+    public void consume(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack) {
+      KafkaConsumerImpl.this.consume(consumerRecord, ack);
     }
   }
 
@@ -130,14 +130,14 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
         org.apache.kafka.clients.consumer.CommitFailedException.class // useless
       }
     )
-    public void consume(ConsumerRecord<String, String> record) {
-      KafkaConsumerImpl.this.consume(record, null);
+    public void consume(ConsumerRecord<String, String> consumerRecord) {
+      KafkaConsumerImpl.this.consume(consumerRecord, null);
     }
 
     @DltHandler
-    public void retry(ConsumerRecord<String, String> record) {
-      logger.info("Execute retry for record with offset = {}", record.offset());
-      consume(record);
+    public void dltHandler(ConsumerRecord<String, String> consumerRecord) {
+      logger.info("Execute retry for record with offset = {}", consumerRecord.offset());
+      consume(consumerRecord);
     }
   }
 
@@ -151,14 +151,14 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
         NullPointerException.class
       }
     )
-    public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-      KafkaConsumerImpl.this.consume(record, ack);
+    public void consume(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack) {
+      KafkaConsumerImpl.this.consume(consumerRecord, ack);
     }
 
     @DltHandler
-    public void retry(ConsumerRecord<String, String> record, Acknowledgment ack) {
-      logger.info("Execute retry for record with offset = {}", record.offset());
-      consume(record, ack);
+    public void dltHandler(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack) {
+      logger.info("Execute retry for record with offset = {}", consumerRecord.offset());
+      consume(consumerRecord, ack);
     }
   }
 
@@ -183,10 +183,10 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
   }
 
   @Override
-  public void consume(ConsumerRecord<String, String> record, Acknowledgment ack) {
-    logOffsets(Collections.singletonList(record));
-    logRecord(() -> kafkaMessageFormatter.format(record));
-    internalConsume(Collections.singletonList(record), ack);
+  public void consume(ConsumerRecord<String, String> consumerRecord, Acknowledgment ack) {
+    logOffsets(Collections.singletonList(consumerRecord));
+    logRecord(() -> kafkaMessageFormatter.format(consumerRecord));
+    internalConsume(Collections.singletonList(consumerRecord), ack);
   }
 
   @Override
@@ -236,7 +236,7 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
     }
   }
 
-  private void processRecord(ConsumerRecord<String, String> record) {
+  private void processRecord(ConsumerRecord<String, String> consumerRecord) {
     try {
       final var kafkaProps = appProperties.kafka();
       if (kafkaProps.emulateProcessingErrorEnabled()) {
@@ -247,12 +247,12 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
         if (isExceeded) {
           lastCallMsAtomic.set(now);
           throw new NullPointerException(
-            String.format("NPE while processing (record offset = %d)", record.offset())
+            String.format("NPE while processing (record offset = %d)", consumerRecord.offset())
           );
         }
       }
 
-      final var data = record.value();
+      final var data = consumerRecord.value();
       final JsonNode jsonNode;
       try {
         jsonNode = objectMapper.readTree(data);
@@ -264,9 +264,9 @@ public class KafkaConsumerImpl implements KafkaConsumer<String, String> {
       }
 
       final var delay = kafkaProps.processingDelay();
-      logger.info("Sleep for {} seconds (record offset = {})", delay.getSeconds(), record.offset());
+      logger.info("Sleep for {} seconds (record offset = {})", delay.getSeconds(), consumerRecord.offset());
       Thread.sleep(delay.toMillis());
-      logger.info("Wake up (record offset = {})", record.offset());
+      logger.info("Wake up (record offset = {})", consumerRecord.offset());
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
     }

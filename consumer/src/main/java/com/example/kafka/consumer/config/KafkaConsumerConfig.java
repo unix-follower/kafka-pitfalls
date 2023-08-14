@@ -3,7 +3,7 @@ package com.example.kafka.consumer.config;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.cfg.JsonNodeFeature;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -39,9 +39,6 @@ public class KafkaConsumerConfig {
   private static final Logger logger = LoggerFactory.getLogger(KafkaConsumerConfig.class);
 
   @Autowired
-  private AppProperties appProperties;
-
-  @Autowired
   private KafkaProperties kafkaProperties;
 
   @Bean
@@ -50,7 +47,7 @@ public class KafkaConsumerConfig {
       .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
       .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true)
       .configure(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN, true)
-      .setNodeFactory(JsonNodeFactory.withExactBigDecimals(true));
+      .configure(JsonNodeFeature.STRIP_TRAILING_BIGDECIMAL_ZEROES, true);
   }
 
   @Bean
@@ -110,7 +107,10 @@ public class KafkaConsumerConfig {
     value = "app.kafka.override-default-error-handler-enabled",
     havingValue = "true"
   )
-  public CommonErrorHandler errorHandler(KafkaTemplate<String, String> kafkaTemplate) {
+  public CommonErrorHandler errorHandler(
+    AppProperties appProperties,
+    KafkaTemplate<String, String> kafkaTemplate
+  ) {
     final var interval = appProperties.kafka().errorHandlerInterval().toMillis();
     final int attempts = appProperties.kafka().errorHandlerAttempts();
 
@@ -126,10 +126,14 @@ public class KafkaConsumerConfig {
 
   private static class LoggingRetryListener implements RetryListener {
     @Override
-    public void failedDelivery(ConsumerRecord<?, ?> record, Exception ex, int deliveryAttempt) {
-      logger.warn("ConsumerRecord delivery failed. Attempt = {} for record offset = {}", deliveryAttempt, record.offset());
+    public void failedDelivery(ConsumerRecord<?, ?> consumerRecord, Exception ex, int deliveryAttempt) {
+      logger.warn(
+        "ConsumerRecord delivery failed. Attempt = {} for record offset = {}",
+        deliveryAttempt, consumerRecord.offset()
+      );
     }
 
+    @Override
     public void failedDelivery(ConsumerRecords<?, ?> records, Exception ex, int deliveryAttempt) {
       logger.warn(
         "ConsumerRecords delivery failed. Attempt = {}. Records count = {}",
