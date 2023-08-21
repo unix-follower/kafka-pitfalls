@@ -35,8 +35,9 @@ spring:
 
 logging:
   level:
-    org.apache.kafka: DEBUG
-    org.springframework.kafka.listener: DEBUG
+    org.apache.kafka: INFO
+    org.apache.kafka.clients.consumer.internals.ConsumerCoordinator: WARN
+    org.springframework.kafka.listener: INFO
 
 app:
   kafka:
